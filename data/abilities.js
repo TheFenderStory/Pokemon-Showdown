@@ -651,7 +651,7 @@ exports.BattleAbilities = {
 		desc: "30% chance a Pokemon making contact with this Pokemon will be poisoned, paralyzed, or fall asleep.",
 		shortDesc: "30% chance of poison/paralysis/sleep on others making contact with this Pokemon.",
 		onAfterDamage: function (damage, target, source, move) {
-			if (move && move.flags['contact'] && !source.status && source.runImmunity('powder')) {
+			if (move && move.flags['contact'] && !source.status && source.runStatusImmunity('powder')) {
 				let r = this.random(100);
 				if (r < 11) {
 					source.setStatus('slp', target);
@@ -1347,9 +1347,7 @@ exports.BattleAbilities = {
 	"levitate": {
 		desc: "This Pokemon is immune to Ground. Gravity, Ingrain, Smack Down, Thousand Arrows, and Iron Ball nullify the immunity.",
 		shortDesc: "This Pokemon is immune to Ground; Gravity/Ingrain/Smack Down/Iron Ball nullify it.",
-		onImmunity: function (type) {
-			if (type === 'Ground') return false;
-		},
+		// airborneness implemented in battle-engine.js:BattlePokemon#isGrounded
 		id: "levitate",
 		name: "Levitate",
 		rating: 3.5,
@@ -1381,6 +1379,7 @@ exports.BattleAbilities = {
 			if (this.validTarget(this.effectData.target, source, move.target)) {
 				if (this.effectData.target !== target) {
 					this.add('-activate', this.effectData.target, 'ability: Lightning Rod');
+					this.retargetLastMove(this.effectData.target);
 				}
 				return this.effectData.target;
 			}
@@ -1470,7 +1469,7 @@ exports.BattleAbilities = {
 		onSourceHit: function (target, source, move) {
 			if (!move || !target) return;
 			if (target !== source && move.category !== 'Status') {
-				if (source.item) return;
+				if (source.item || source.volatiles['gem'] || source.volatiles['fling']) return;
 				let yourItem = target.takeItem(source);
 				if (!yourItem) return;
 				if (!source.setItem(yourItem)) {
@@ -2719,6 +2718,7 @@ exports.BattleAbilities = {
 			if (this.validTarget(this.effectData.target, source, move.target)) {
 				if (this.effectData.target !== target) {
 					this.add('-activate', this.effectData.target, 'ability: Storm Drain');
+					this.retargetLastMove(this.effectData.target);
 				}
 				return this.effectData.target;
 			}
@@ -3318,9 +3318,10 @@ exports.BattleAbilities = {
 				return false;
 			}
 		},
-		onImmunity: function (type, target) {
-			if (type === 'Rock' && !target.activeTurns) {
-				return false;
+		onTryHit: function (target, source, move) {
+			if (move.type === 'Rock' && !target.activeTurns) {
+				this.add('-immune', target, '[msg]', '[from] ability: Mountaineer');
+				return null;
 			}
 		},
 		id: "mountaineer",

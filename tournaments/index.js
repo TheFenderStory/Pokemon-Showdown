@@ -757,7 +757,7 @@ function createTournament(room, format, generator, playerCap, isRated, args, out
 	format = Tools.getFormat(format);
 	if (format.effectType !== 'Format' || !format.tournamentShow) {
 		output.errorReply(format.id + " is not a valid tournament format.");
-		output.errorReply("Valid formats: " + Object.values(Tools.data.Formats).filter(f => f.effectType === 'Format' && f.tournamentShow).map('name').join(", "));
+		output.errorReply("Valid formats: " + Object.values(Tools.data.Formats).filter(f => f.effectType === 'Format' && f.tournamentShow).map(format => format.name).join(", "));
 		return;
 	}
 	if (!TournamentGenerators[toId(generator)]) {
@@ -848,14 +848,21 @@ let commands = {
 				this.sendReply("Tournament set to " + generator.name + (playerCap ? " with a player cap of " + tournament.playerCap : "") + ".");
 			}
 		},
+		end: 'delete',
+		stop: 'delete',
+		delete: function (tournament, user) {
+			if (deleteTournament(tournament.room.id, this)) {
+				this.privateModCommand("(" + user.name + " forcibly ended a tournament.)");
+			}
+		},
+	},
+	moderation: {
 		begin: 'start',
 		start: function (tournament, user) {
 			if (tournament.startTournament(this)) {
 				this.sendModCommand("(" + user.name + " started the tournament.)");
 			}
 		},
-	},
-	moderation: {
 		dq: 'disqualify',
 		disqualify: function (tournament, user, params, cmd) {
 			if (params.length < 1) {
@@ -971,13 +978,6 @@ let commands = {
 				this.privateModCommand("(The tournament was set to disallow modjoin by " + user.name + ")");
 			} else {
 				return this.sendReply("Usage: " + cmd + " <allow|disallow>");
-			}
-		},
-		end: 'delete',
-		stop: 'delete',
-		delete: function (tournament, user) {
-			if (deleteTournament(tournament.room.id, this)) {
-				this.privateModCommand("(" + user.name + " forcibly ended a tournament.)");
 			}
 		},
 	},
