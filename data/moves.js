@@ -4430,6 +4430,9 @@ exports.BattleMovedex = {
 			let item = this.getItem(source.volatiles['fling'].item);
 			this.add("-enditem", source, item.name, '[from] move: Fling');
 		},
+		onAfterMove: function (pokemon) {
+			pokemon.removeVolatile('fling');
+		},
 		effect: {
 			duration: 1,
 			onStart: function (pokemon) {
@@ -4896,11 +4899,11 @@ exports.BattleMovedex = {
 		num: 210,
 		accuracy: 95,
 		basePower: 40,
-		basePowerCallback: function (pokemon) {
+		basePowerCallback: function (pokemon, target, move) {
 			if (!pokemon.volatiles.furycutter) {
 				pokemon.addVolatile('furycutter');
 			}
-			return this.clampIntRange(40 * pokemon.volatiles.furycutter.multiplier, 40, 160);
+			return this.clampIntRange(move.basePower * pokemon.volatiles.furycutter.multiplier, 1, 160);
 		},
 		category: "Physical",
 		desc: "Power doubles with each successful hit, up to a maximum of 160 power; resets to 40 power if the move misses or another move is used.",
@@ -10753,15 +10756,17 @@ exports.BattleMovedex = {
 		flags: {charge: 1, protect: 1, mirror: 1},
 		onTry: function (attacker, defender, move) {
 			if (attacker.volatiles['twoturnmove']) {
-				if (attacker.volatiles['twoturnmove'].duration === 1) {
-					return;
-				} else {
-					return null;
-				}
+				if (attacker.volatiles['twoturnmove'].duration === 2) return null;
+				attacker.removeVolatile(move.id);
+				return;
 			}
 			this.add('-prepare', attacker, move.name, defender);
 			if (!this.runEvent('ChargeMove', attacker, defender, move)) {
 				this.add('-anim', attacker, move.name, defender);
+				if (move.spreadHit) {
+					attacker.addVolatile('twoturnmove', defender);
+					attacker.volatiles['twoturnmove'].duration = 1;
+				}
 				return;
 			}
 			attacker.addVolatile('twoturnmove', defender);
