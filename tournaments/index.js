@@ -471,7 +471,7 @@ class Tournament {
 			this.generator.setUserBusy(matchFrom.to, false);
 			this.inProgressMatches.set(player, null);
 			delete matchFrom.room.tour;
-			matchFrom.room.battle.forfeit(player.userid);
+			if (matchFrom.room.battle) matchFrom.room.battle.forfeit(player.userid);
 		}
 
 		let matchTo = null;
@@ -482,7 +482,7 @@ class Tournament {
 			this.generator.setUserBusy(matchTo, false);
 			let matchRoom = this.inProgressMatches.get(matchTo).room;
 			delete matchRoom.tour;
-			matchRoom.battle.forfeit(player.userid);
+			if (matchRoom.battle) matchRoom.battle.forfeit(player.userid);
 			this.inProgressMatches.set(matchTo, null);
 		}
 
@@ -734,10 +734,10 @@ class Tournament {
 			}
 		}
 	}
-	onBattleWin(room, winner) {
+	onBattleWin(room, winnerid) {
 		let from = this.players[room.p1.userid];
 		let to = this.players[room.p2.userid];
-		if (winner) winner = this.players[winner.userid];
+		let winner = this.players[winnerid];
 
 		let result = 'draw';
 		if (from === winner) {
@@ -764,7 +764,7 @@ class Tournament {
 		let error = this.generator.setMatchResult([from, to], result, room.battle.score);
 		if (error) {
 			// Should never happen
-			return this.room.add("Unexpected " + error + " from setMatchResult([" + from.userid + ", " + to.userid + "], " + result + ", " + room.battle.score + ") in onBattleWin(" + room.id + ", " + winner.userid + "). Please report this to an admin.").update();
+			return this.room.add("Unexpected " + error + " from setMatchResult([" + room.p1.userid + ", " + room.p2.userid + "], " + result + ", " + room.battle.score + ") in onBattleWin(" + room.id + ", " + winnerid + "). Please report this to an admin.").update();
 		}
 
 		this.room.add('|tournament|battleend|' + from.name + '|' + to.name + '|' + result + '|' + room.battle.score.join(','));
