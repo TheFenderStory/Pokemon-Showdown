@@ -293,6 +293,13 @@ class CommandContext {
 				this.errorReply("You are muted and cannot talk in this room.");
 				return false;
 			}
+			if ((!room || !room.battle) && (!targetUser || " +".includes(targetUser.group))) {
+				// in a chat room, or PMing non-staff
+				if (user.namelocked) {
+					this.errorReply("You are namelocked and cannot talk except in battles and to global staff.");
+					return false;
+				}
+			}
 			if (room && room.modchat) {
 				let userGroup = user.group;
 				if (room.auth) {
@@ -649,7 +656,9 @@ exports.uncacheTree = function (root) {
 		for (let i = 0; i < uncache.length; ++i) {
 			if (require.cache[uncache[i]]) {
 				newuncache.push.apply(newuncache,
-					require.cache[uncache[i]].children.map(cachedModule => cachedModule.id)
+					require.cache[uncache[i]].children
+						.filter(cachedModule => !cachedModule.id.endsWith('.node'))
+						.map(cachedModule => cachedModule.id)
 				);
 				delete require.cache[uncache[i]];
 			}
